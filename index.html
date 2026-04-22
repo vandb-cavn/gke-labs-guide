@@ -7,9 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Chosen Palette: Slate & Indigo (Modern Professional) -->
-    <!-- Application Structure Plan: Cấu trúc dashboard với thanh điều hướng bên trái. Nội dung chính được thiết kế theo luồng công việc 2 bước: Bước 1 - Thiết lập biến môi trường (Environment Variable) và Bước 2 - Thực thi lệnh Shell. Việc tách rời này giúp người dùng dễ dàng tùy chỉnh Region/Zone theo đúng yêu cầu cụ thể của từng phiên Lab mà không bị nhầm lẫn với mã nguồn script. -->
-    <!-- Visualization & Content Choices: Dashboard -> Overview (Stats) -> Lab Detail (2-Step Execution Flow). Biểu đồ Bar Chart thể hiện số lượng tác vụ để người dùng ước lượng thời gian. Confirming NO SVG/Mermaid used. -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <!-- Application Structure Plan: Cấu trúc dashboard với thanh điều hướng bên trái. Nội dung chính được thiết kế theo luồng công việc 2 bước. Cập nhật sửa lỗi tràn chữ bằng cách sử dụng overflow-x-auto và cố định nút bấm với shrink-0. -->
     <style>
         .chart-container {
             position: relative;
@@ -37,6 +35,17 @@
             border-radius: 50%;
             font-size: 12px;
             font-weight: bold;
+        }
+        /* Tối ưu scrollbar cho các đoạn code dài */
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
         }
     </style>
 </head>
@@ -110,7 +119,7 @@
                             <div class="flex items-center gap-6">
                                 <span id="lab-icon" class="text-5xl p-4 bg-slate-50 rounded-3xl border border-slate-100"></span>
                                 <div>
-                                    <h2 id="lab-title" class="text-3xl font-black text-slate-900"></h2>
+                                    <h2 id="lab-title" class="text-3xl font-black text-slate-900 leading-tight"></h2>
                                     <p id="lab-filename" class="text-indigo-500 font-mono text-sm font-bold"></p>
                                 </div>
                             </div>
@@ -121,7 +130,7 @@
                     <div class="p-8 md:p-10 space-y-10">
                         
                         <!-- QUICK RUN ONE-LINER -->
-                        <div class="bg-indigo-950 p-8 rounded-[2.5rem] shadow-2xl relative">
+                        <div class="bg-indigo-950 p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] shadow-2xl relative overflow-hidden">
                             <h3 class="text-indigo-300 text-[10px] font-black uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
                                 <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse"></span> Quick Run (One-liner)
                             </h3>
@@ -129,16 +138,16 @@
                             <div class="space-y-6">
                                 <div>
                                     <p class="text-white text-xs font-bold mb-3 opacity-80">Bước 1: Thiết lập biến môi trường</p>
-                                    <div class="bg-black/40 p-4 rounded-xl border border-white/10 flex items-center gap-3">
-                                        <code id="export-one-liner" class="text-indigo-300 text-xs flex-1 code-font"></code>
-                                        <button onclick="copyElement('export-one-liner', this)" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-[10px] font-bold transition-all">Copy</button>
+                                    <div class="bg-black/40 p-4 rounded-xl border border-white/10 flex items-center gap-3 overflow-hidden">
+                                        <code id="export-one-liner" class="text-indigo-300 text-[11px] md:text-xs flex-1 code-font whitespace-nowrap overflow-x-auto custom-scrollbar py-1"></code>
+                                        <button onclick="copyElement('export-one-liner', this)" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-[10px] font-bold transition-all shrink-0">Copy</button>
                                     </div>
                                 </div>
                                 <div>
                                     <p class="text-white text-xs font-bold mb-3 opacity-80">Bước 2: Chạy toàn bộ Lab</p>
-                                    <div class="bg-black/40 p-4 rounded-xl border border-white/10 flex items-center gap-3">
-                                        <code id="run-one-liner" class="text-emerald-400 text-xs flex-1 code-font"></code>
-                                        <button onclick="copyElement('run-one-liner', this)" class="bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2 rounded-lg text-[10px] font-bold transition-all shadow-lg">Copy & Run</button>
+                                    <div class="bg-black/40 p-4 rounded-xl border border-white/10 flex items-center gap-3 overflow-hidden">
+                                        <code id="run-one-liner" class="text-emerald-400 text-[11px] md:text-xs flex-1 code-font whitespace-nowrap overflow-x-auto custom-scrollbar py-1"></code>
+                                        <button onclick="copyElement('run-one-liner', this)" class="bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2 rounded-lg text-[10px] font-bold transition-all shadow-lg shrink-0">Copy & Run</button>
                                     </div>
                                 </div>
                             </div>
@@ -179,7 +188,7 @@
                     filename: 'lab1.sh',
                     varType: 'REGION',
                     placeholder: '<LAB_REGION>',
-                    link: 'https://gist.githubusercontent.com/vandb-cavn/4a1c3a756c4f665fa83b74baa2bc3ae6/raw/652238cc3936e557e7b48b83cdc9bf84116aec57/lab1.sh',
+                    link: 'https://gist.githubusercontent.com/vandb-cavn/4a1c3a756c4f665fa83b74baa2bc3ae6/raw/70840714d6221a351b50c312bbff2a1a8b520cb4/lab1.sh',
                     defaultVars: [
                         { name: 'REGION', val: 'us-central1' },
                         { name: 'CLUSTER', val: 'autopilot-cluster-1' }
@@ -197,7 +206,7 @@
                     filename: 'lab2.sh',
                     varType: 'ZONE',
                     placeholder: '<LAB_ZONE>',
-                    link: 'https://gist.githubusercontent.com/vandb-cavn/51c5e4ef4000d9c954259ce6159c8ad4/raw/7fc552ad3c6afaa7d38c3fe8a2c13d163fa777ad/lab2.sh',
+                    link: 'https://gist.githubusercontent.com/vandb-cavn/51c5e4ef4000d9c954259ce6159c8ad4/raw/bc161dcd97b5ca37e8efb18e040ce9ccfb906ea8/lab2.sh',
                     defaultVars: [
                         { name: 'ZONE', val: 'us-central1-f' },
                         { name: 'CLUSTER', val: 'hello-world' }
@@ -315,13 +324,13 @@
                 const div = document.createElement('div');
                 div.className = 'bg-white border border-slate-200 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:shadow-lg transition-all';
                 div.innerHTML = `
-                    <div class="flex-1">
+                    <div class="flex-1 overflow-hidden">
                         <span class="text-[8px] font-black px-2 py-0.5 bg-indigo-50 text-indigo-500 rounded-full border border-indigo-100 uppercase">TASK ${cmd.arg.toUpperCase()}</span>
-                        <p class="text-slate-600 text-xs font-bold mt-2">${cmd.desc}</p>
+                        <p class="text-slate-600 text-xs font-bold mt-2 truncate">${cmd.desc}</p>
                     </div>
-                    <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100">
-                        <code class="text-[10px] text-indigo-600 font-black px-2 code-font">${fullCmd}</code>
-                        <button onclick="copyText('${fullCmd}', this)" class="bg-indigo-600 hover:bg-black text-white px-4 py-2 rounded-lg text-[10px] font-black transition-all">Copy</button>
+                    <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100 overflow-hidden shrink-0 max-w-full">
+                        <code class="text-[10px] text-indigo-600 font-black px-2 code-font whitespace-nowrap overflow-x-auto custom-scrollbar py-1">${fullCmd}</code>
+                        <button onclick="copyText('${fullCmd}', this)" class="bg-indigo-600 hover:bg-black text-white px-4 py-2 rounded-lg text-[10px] font-black transition-all shrink-0">Copy</button>
                     </div>
                 `;
                 cmdContainer.appendChild(div);
