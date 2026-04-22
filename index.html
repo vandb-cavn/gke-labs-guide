@@ -6,9 +6,9 @@
     <title>GKE & Cloud Build Labs - Interactive Guide</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Chosen Palette: Warm Neutrals (Stone/Slate) with Indigo accents -->
-    <!-- Application Structure Plan: Dashboard layout optimized for command copying. This version re-introduces the "Quick Run (One-liner)" section as requested, placing it prominently above the individual task IDs. It continues to feature the "Default Variables" analysis and usage syntax. The logic for copying and rendering is encapsulated within a single-page application structure for maximum usability in Cloud Shell environments. -->
-    <!-- Visualization & Content Choices: Overview -> Task Count per Lab. Lab Detail -> Quick Run Block -> Default Variables List -> Command List. Confirming NO SVG/Mermaid. -->
+    <!-- Chosen Palette: Slate & Indigo (Modern Professional) -->
+    <!-- Application Structure Plan: Cấu trúc dashboard với thanh điều hướng bên trái. Nội dung chính được thiết kế theo luồng công việc 2 bước: Bước 1 - Thiết lập biến môi trường (Environment Variable) và Bước 2 - Thực thi lệnh Shell. Việc tách rời này giúp người dùng dễ dàng tùy chỉnh Region/Zone theo đúng yêu cầu cụ thể của từng phiên Lab mà không bị nhầm lẫn với mã nguồn script. -->
+    <!-- Visualization & Content Choices: Dashboard -> Overview (Stats) -> Lab Detail (2-Step Execution Flow). Biểu đồ Bar Chart thể hiện số lượng tác vụ để người dùng ước lượng thời gian. Confirming NO SVG/Mermaid used. -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
         .chart-container {
@@ -18,75 +18,81 @@
             margin-left: auto;
             margin-right: auto;
             height: 250px;
-            max-height: 300px;
         }
-        @media (min-width: 768px) {
-            .chart-container { height: 300px; }
-        }
+        @media (min-width: 768px) { .chart-container { height: 300px; } }
         .nav-item.active {
-            background-color: #eef2ff;
-            color: #3730a3;
-            border-right: 4px solid #4f46e5;
+            background-color: #f5f3ff;
+            color: #4338ca;
+            border-right: 4px solid #6366f1;
             font-weight: 600;
         }
         .nav-item { border-right: 4px solid transparent; }
-        .code-block { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-        .var-badge {
-            background: #f8fafc;
-            color: #475569;
-            border: 1px solid #e2e8f0;
-        }
-        .highlight-box {
-            background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+        .code-font { font-family: 'Fira Code', 'Cascadia Code', 'Source Code Pro', monospace; }
+        .step-number {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: bold;
         }
     </style>
 </head>
-<body class="bg-stone-50 text-stone-800 font-sans antialiased overflow-x-hidden flex h-screen">
+<body class="bg-slate-50 text-slate-800 font-sans antialiased overflow-x-hidden flex h-screen">
 
     <!-- Sidebar Navigation -->
-    <aside class="w-72 bg-white shadow-lg z-10 flex flex-col h-full flex-shrink-0 hidden md:flex">
-        <div class="p-6 border-b border-stone-100">
-            <h1 class="text-2xl font-bold text-indigo-900 flex items-center gap-2">
-                <span>☁️</span> GKE Automation
+    <aside class="w-80 bg-white shadow-xl z-10 flex flex-col h-full flex-shrink-0 hidden lg:flex">
+        <div class="p-8 border-b border-slate-100">
+            <h1 class="text-2xl font-extrabold text-indigo-900 flex items-center gap-2">
+                <span>☁️</span> GKE Master
             </h1>
-            <p class="text-xs text-stone-500 mt-1 uppercase tracking-widest font-semibold">One-liner & Variable Guide</p>
+            <p class="text-[10px] text-slate-400 mt-2 uppercase tracking-[0.2em] font-bold">Automation Guide</p>
         </div>
-        <nav class="flex-1 overflow-y-auto py-4">
+        <nav class="flex-1 overflow-y-auto py-6">
             <ul class="space-y-1" id="desktop-nav"></ul>
         </nav>
     </aside>
 
-    <!-- Main Content -->
+    <!-- Main Content Area -->
     <div class="flex-1 flex flex-col h-full overflow-hidden">
-        <!-- Mobile Header -->
-        <header class="bg-white shadow-sm border-b border-stone-200 p-4 flex justify-between items-center md:hidden">
-            <h1 class="text-xl font-bold text-indigo-900">GKE Automation</h1>
-            <button id="mobile-menu-btn" class="text-stone-600 text-2xl">☰</button>
+        <header class="bg-white shadow-sm border-b border-slate-200 p-4 flex justify-between items-center lg:hidden">
+            <h1 class="text-xl font-bold text-indigo-900">GKE Master</h1>
+            <button id="mobile-menu-btn" class="text-slate-600 text-2xl">☰</button>
         </header>
 
-        <div id="mobile-nav" class="bg-white absolute w-full z-20 shadow-xl hidden flex-col border-b border-stone-200">
+        <div id="mobile-nav" class="bg-white absolute w-full z-20 shadow-2xl hidden flex-col border-b border-slate-200">
             <ul class="py-2" id="mobile-nav-list"></ul>
         </div>
 
-        <main class="flex-1 overflow-y-auto p-4 md:p-8 relative">
+        <main class="flex-1 overflow-y-auto p-4 md:p-10">
             
             <!-- VIEW: OVERVIEW -->
             <section id="view-overview" class="view-section max-w-5xl mx-auto hidden">
-                <div class="bg-white rounded-2xl shadow-sm border border-stone-200 p-8 mb-8">
-                    <h2 class="text-3xl font-bold text-stone-900 mb-4 border-b pb-4 border-stone-100">Hướng dẫn Chạy nhanh & Biến</h2>
-                    <p class="text-stone-600 text-lg mb-8 leading-relaxed">Ứng dụng này giúp bạn quản lý các bài Lab về GKE thông qua các script tự động. Bạn có thể chọn cách <strong>Chạy nhanh (One-liner)</strong> để tiết kiệm thời gian hoặc thực hiện từng bước nếu muốn tìm hiểu kỹ quy trình.</p>
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-10 mb-10">
+                    <h2 class="text-4xl font-black text-slate-900 mb-6 border-b pb-6 border-slate-100">Quy trình 2 Bước</h2>
+                    <p class="text-slate-500 text-lg mb-10 leading-relaxed">Để đảm bảo script chạy đúng với tài nguyên được cấp phát trong bài Lab, chúng ta sẽ thực hiện theo quy trình chuẩn hóa gồm hai giai đoạn: Thiết lập biến môi trường và Thực thi script.</p>
 
                     <div class="grid md:grid-cols-2 gap-12">
-                        <div>
-                            <h3 class="text-xl font-bold text-indigo-800 mb-4 flex items-center gap-2"><span>🚀</span> Quick Run One-liner</h3>
-                            <p class="text-stone-600 text-sm mb-4 leading-relaxed">Đối với mỗi bài Lab, chúng tôi cung cấp một câu lệnh gộp bao gồm việc tải script, cấp quyền thực thi và chạy toàn bộ các bước (parameter <code>all</code>). Đây là cách hiệu quả nhất khi bạn đã quen thuộc với yêu cầu của bài Lab.</p>
-                            <div class="p-4 bg-indigo-50 rounded-xl border border-indigo-100">
-                                <h4 class="font-bold text-indigo-900 text-xs uppercase mb-2">Cấu trúc lệnh:</h4>
-                                <code class="text-[10px] block break-all text-indigo-700">curl -LO [URL] && chmod +x [FILE] && ./[FILE] all</code>
+                        <div class="space-y-6">
+                            <div class="flex items-start gap-4">
+                                <div class="step-number bg-indigo-600 text-white shrink-0">1</div>
+                                <div>
+                                    <h3 class="font-bold text-slate-800">Thiết lập Biến (Export)</h3>
+                                    <p class="text-sm text-slate-500">Copy lệnh <code>export</code> và thay thế giá trị trong dấu ngoặc bằng thông tin từ trang hướng dẫn Lab của Google.</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-4">
+                                <div class="step-number bg-indigo-600 text-white shrink-0">2</div>
+                                <div>
+                                    <h3 class="font-bold text-slate-800">Thực thi Script (Run)</h3>
+                                    <p class="text-sm text-slate-500">Sau khi đã export biến thành công, copy lệnh <code>bash</code> để bắt đầu quá trình tự động hóa.</p>
+                                </div>
                             </div>
                         </div>
-                        <div class="flex flex-col items-center">
-                            <h3 class="text-lg font-semibold text-stone-700 mb-4">Phân bổ Tasks theo bài Lab</h3>
+                        <div class="bg-slate-50 p-6 rounded-3xl border border-slate-100 flex flex-col items-center">
+                            <h3 class="text-xs font-bold text-slate-400 uppercase mb-4 tracking-widest">Độ phức tạp các bài Lab</h3>
                             <div class="chart-container">
                                 <canvas id="overviewChart"></canvas>
                             </div>
@@ -97,69 +103,60 @@
 
             <!-- VIEW: LAB DETAIL -->
             <section id="view-lab-detail" class="view-section max-w-5xl mx-auto hidden">
-                <div class="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 md:p-8">
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
                     
-                    <!-- Header -->
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                        <div class="flex items-center gap-4">
-                            <span id="lab-icon" class="text-4xl p-3 bg-stone-50 rounded-2xl border border-stone-100"></span>
-                            <div>
-                                <h2 id="lab-title" class="text-3xl font-bold text-stone-900"></h2>
-                                <p id="lab-filename" class="text-stone-400 font-mono text-sm mt-1"></p>
+                    <div class="p-8 border-b border-slate-100 bg-white">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                            <div class="flex items-center gap-6">
+                                <span id="lab-icon" class="text-5xl p-4 bg-slate-50 rounded-3xl border border-slate-100"></span>
+                                <div>
+                                    <h2 id="lab-title" class="text-3xl font-black text-slate-900"></h2>
+                                    <p id="lab-filename" class="text-indigo-500 font-mono text-sm font-bold"></p>
+                                </div>
                             </div>
+                            <a id="lab-link" href="#" target="_blank" class="bg-slate-900 hover:bg-black text-white px-6 py-3 rounded-2xl text-sm font-bold transition-all text-center">Xem Script Gốc ↗</a>
                         </div>
-                        <a id="lab-link" href="#" target="_blank" class="bg-stone-100 hover:bg-stone-200 text-stone-700 px-4 py-2 rounded-xl text-sm font-bold transition-all shrink-0">Script gốc ↗</a>
                     </div>
 
-                    <!-- QUICK RUN SECTION -->
-                    <div class="mb-8 p-6 bg-indigo-900 rounded-2xl shadow-xl border border-indigo-700 relative overflow-hidden">
-                        <div class="relative z-10">
-                            <h3 class="text-indigo-200 text-xs font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
-                                <span>🚀</span> Quick Run (One-liner)
+                    <div class="p-8 md:p-10 space-y-10">
+                        
+                        <!-- QUICK RUN ONE-LINER -->
+                        <div class="bg-indigo-950 p-8 rounded-[2.5rem] shadow-2xl relative">
+                            <h3 class="text-indigo-300 text-[10px] font-black uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                                <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse"></span> Quick Run (One-liner)
                             </h3>
-                            <p class="text-white text-sm mb-4">Tải file, cấp quyền và chạy toàn bộ chỉ với 1 lệnh:</p>
-                            <div class="bg-stone-950/50 p-4 rounded-xl border border-white/10 flex flex-col md:flex-row gap-3 items-center">
-                                <code id="one-liner-text" class="text-indigo-300 text-xs break-all flex-1 font-mono"></code>
-                                <button id="copy-one-liner-btn" class="bg-white hover:bg-indigo-100 text-indigo-900 px-6 py-2 rounded-lg text-xs font-bold transition-all shrink-0">Copy Lệnh</button>
+                            
+                            <div class="space-y-6">
+                                <div>
+                                    <p class="text-white text-xs font-bold mb-3 opacity-80">Bước 1: Thiết lập biến môi trường</p>
+                                    <div class="bg-black/40 p-4 rounded-xl border border-white/10 flex items-center gap-3">
+                                        <code id="export-one-liner" class="text-indigo-300 text-xs flex-1 code-font"></code>
+                                        <button onclick="copyElement('export-one-liner', this)" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-[10px] font-bold transition-all">Copy</button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="text-white text-xs font-bold mb-3 opacity-80">Bước 2: Chạy toàn bộ Lab</p>
+                                    <div class="bg-black/40 p-4 rounded-xl border border-white/10 flex items-center gap-3">
+                                        <code id="run-one-liner" class="text-emerald-400 text-xs flex-1 code-font"></code>
+                                        <button onclick="copyElement('run-one-liner', this)" class="bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2 rounded-lg text-[10px] font-bold transition-all shadow-lg">Copy & Run</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- DEFAULT VARIABLES SECTION -->
-                    <div class="mb-8">
-                        <div class="flex items-center gap-2 mb-3">
-                            <h3 class="text-sm font-bold text-stone-500 uppercase tracking-widest">Biến mặc định trong Script</h3>
-                            <div class="h-px bg-stone-200 flex-1"></div>
+                        <!-- DEFAULT VALUES FOR REFERENCE -->
+                        <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Giá trị tham khảo (Defaults)</h3>
+                            <div id="default-vars-container" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
                         </div>
-                        <div id="default-vars-container" class="grid grid-cols-2 md:grid-cols-4 gap-3">
+
+                        <!-- TASK LIST -->
+                        <div class="space-y-6">
+                            <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">Thực thi từng Task ID</h3>
+                            <div id="lab-commands-container" class="grid gap-4"></div>
                         </div>
-                        <p class="text-[11px] text-stone-400 mt-2 italic">* Nếu giá trị trong bài lab khác với trên, hãy sử dụng tham số Region/Zone tương ứng để set lại.</p>
+
                     </div>
-
-                    <!-- Usage Explanation -->
-                    <div class="mb-10 p-6 highlight-box rounded-2xl border border-stone-100">
-                        <h3 class="text-lg font-bold text-indigo-900 mb-4 flex items-center gap-2">
-                            <span class="w-2 h-6 bg-indigo-500 rounded-full"></span>
-                            Cú pháp thực thi chi tiết
-                        </h3>
-                        <div class="grid md:grid-cols-2 gap-4">
-                            <div class="bg-stone-900 text-indigo-300 p-4 rounded-xl font-mono text-sm shadow-inner relative group border border-stone-700">
-                                <div class="text-[10px] text-stone-500 mb-1 uppercase font-bold tracking-tighter">Tham số mặc định (Default)</div>
-                                <code id="usage-default"></code>
-                                <button id="copy-usage-default" class="absolute right-4 top-1/2 -translate-y-1/2 bg-stone-700 hover:bg-indigo-600 text-white px-3 py-1 rounded text-xs transition-all">Copy</button>
-                            </div>
-                            <div class="bg-stone-800 text-stone-400 p-4 rounded-xl font-mono text-sm shadow-inner relative group border border-stone-700">
-                                <div class="text-[10px] text-stone-500 mb-1 uppercase font-bold tracking-tighter">Region tùy chỉnh (Override)</div>
-                                <code id="usage-custom"></code>
-                                <button id="copy-usage-custom" class="absolute right-4 top-1/2 -translate-y-1/2 bg-stone-700 hover:bg-stone-600 text-white px-3 py-1 rounded text-xs transition-all">Copy</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Commands Table -->
-                    <h3 class="text-lg font-bold text-stone-800 mb-4">Các bước Task IDs lẻ</h3>
-                    <div id="lab-commands-container" class="space-y-3"></div>
-
                 </div>
             </section>
 
@@ -171,7 +168,7 @@
             labs: [
                 {
                     id: 'overview',
-                    title: 'Tổng quan & Chạy nhanh',
+                    title: 'Bảng Điều Khiển',
                     icon: '🏠',
                     isNavOnly: true
                 },
@@ -180,19 +177,17 @@
                     title: 'Lab 1: Deploying GKE Autopilot',
                     icon: '📦',
                     filename: 'lab1.sh',
+                    varType: 'REGION',
+                    placeholder: '<LAB_REGION>',
                     link: 'https://gist.githubusercontent.com/vandb-cavn/4a1c3a756c4f665fa83b74baa2bc3ae6/raw/652238cc3936e557e7b48b83cdc9bf84116aec57/lab1.sh',
                     defaultVars: [
                         { name: 'REGION', val: 'us-central1' },
-                        { name: 'CLUSTER', val: 'autopilot-cluster-1' },
-                        { name: 'DEPLOYMENT', val: 'nginx-1' },
-                        { name: 'IMAGE', val: 'nginx:latest' }
+                        { name: 'CLUSTER', val: 'autopilot-cluster-1' }
                     ],
-                    usageDefault: './lab1.sh all',
-                    usageCustom: './lab1.sh all',
                     commands: [
-                        { arg: 'all', desc: 'Chạy toàn bộ Lab với cấu hình mặc định (us-central1).' },
-                        { arg: '1', desc: 'Task 1: Chỉ bật container API và tạo cụm GKE Autopilot.' },
-                        { arg: '2', desc: 'Task 2: Lấy credentials và triển khai nginx workload.' }
+                        { arg: 'all', desc: 'Thực hiện toàn bộ: Bật API, Tạo Cluster và Deploy Nginx.' },
+                        { arg: '1', desc: 'Task 1: Chỉ kích hoạt API và tạo GKE Autopilot Cluster.' },
+                        { arg: '2', desc: 'Task 2: Lấy Credentials và triển khai Nginx.' }
                     ]
                 },
                 {
@@ -200,20 +195,18 @@
                     title: 'Lab 2: Containerized App on GKE',
                     icon: '🐳',
                     filename: 'lab2.sh',
+                    varType: 'ZONE',
+                    placeholder: '<LAB_ZONE>',
                     link: 'https://gist.githubusercontent.com/vandb-cavn/51c5e4ef4000d9c954259ce6159c8ad4/raw/7fc552ad3c6afaa7d38c3fe8a2c13d163fa777ad/lab2.sh',
                     defaultVars: [
                         { name: 'ZONE', val: 'us-central1-f' },
-                        { name: 'CLUSTER', val: 'hello-world' },
-                        { name: 'IMAGE', val: 'hello-app:1.0' },
-                        { name: 'DEPLOY', val: 'hello-app' }
+                        { name: 'CLUSTER', val: 'hello-world' }
                     ],
-                    usageDefault: './lab2.sh all',
-                    usageCustom: './lab2.sh all',
                     commands: [
-                        { arg: 'all', desc: 'Chạy toàn bộ quy trình: Tạo cụm, Build Image, Push GCR, Deploy & Expose.' },
-                        { arg: '1', desc: 'Task 1: Thiết lập compute zone và tạo cụm GKE 3 nodes.' },
-                        { arg: '2', desc: 'Task 2: Clone code, Build image hello-node và Push lên GCR.' },
-                        { arg: '3', desc: 'Task 3: Expose LoadBalancer cho deployment hello-node.' }
+                        { arg: 'all', desc: 'Toàn bộ quy trình: Tạo cụm, Build image và Expose LB.' },
+                        { arg: '1', desc: 'Task 1: Thiết lập zone và tạo cụm GKE Standard.' },
+                        { arg: '2', desc: 'Task 2: Build docker image và Push lên GCR.' },
+                        { arg: '3', desc: 'Task 3: Expose Deployment ra Internet.' }
                     ]
                 },
                 {
@@ -221,20 +214,18 @@
                     title: 'Lab 3: Working with Cloud Build',
                     icon: '🏗️',
                     filename: 'lab3.sh',
+                    varType: 'REGION',
+                    placeholder: '<LAB_REGION>',
                     link: 'https://gist.githubusercontent.com/vandb-cavn/bbb41a63e895900f7abe9b6029e09798/raw/15b0137dc539796dba6f32642deab63b71b84b80/lab3.sh',
                     defaultVars: [
                         { name: 'REGION', val: 'europe-west1' },
-                        { name: 'REPO', val: 'quickstart-docker-repo' },
-                        { name: 'TAG', val: 'tag1' }
+                        { name: 'REPO', val: 'quickstart-docker-repo' }
                     ],
-                    usageDefault: './lab3.sh all',
-                    usageCustom: './lab3.sh us-east1 all',
                     commands: [
-                        { arg: 'all', desc: 'Thực hiện toàn bộ: Enable API, Docker Build, CloudBuild YAML, Build & Test.' },
-                        { arg: '1', desc: 'Task 1: Kích hoạt các API cần thiết (Cloud Build, Registry).' },
-                        { arg: '2', desc: 'Task 2: Build Image bằng Dockerfile truyền thống.' },
-                        { arg: '3', desc: 'Task 3: Build Image sử dụng file cấu hình cloudbuild.yaml.' },
-                        { arg: '4', desc: 'Task 4: Build & Test sử dụng cloudbuild2.yaml (mô phỏng test fail).' }
+                        { arg: 'all', desc: 'Thực hiện tất cả các bước build và test.' },
+                        { arg: '1', desc: 'Task 1: Enable Cloud Build & Artifact Registry APIs.' },
+                        { arg: '2', desc: 'Task 2: Build image qua Dockerfile.' },
+                        { arg: '3', desc: 'Task 3: Build image qua cloudbuild.yaml.' }
                     ]
                 },
                 {
@@ -242,20 +233,18 @@
                     title: 'Lab 4: GKE Shell Autopilot',
                     icon: '⌨️',
                     filename: 'lab4.sh',
+                    varType: 'REGION',
+                    placeholder: '<LAB_REGION>',
                     link: 'https://gist.githubusercontent.com/vandb-cavn/7cadf6ced54f55d1fa3856d8cc64b972/raw/a19b7a2c29ddd1035c64f5e069b468e6e7a17b66/lab4.sh',
                     defaultVars: [
                         { name: 'REGION', val: 'europe-west4' },
-                        { name: 'CLUSTER', val: 'autopilot-cluster-1' },
-                        { name: 'POD_NAME', val: 'nginx-1' }
+                        { name: 'CLUSTER', val: 'autopilot-cluster-1' }
                     ],
-                    usageDefault: './lab4.sh all',
-                    usageCustom: './lab4.sh us-central1 all',
                     commands: [
-                        { arg: 'all', desc: 'Triển khai cụm, kết nối, deploy Pod từ gcloud và YAML.' },
-                        { arg: '1', desc: 'Task 1: Triển khai cụm GKE Autopilot qua Cloud Shell.' },
-                        { arg: '2', desc: 'Task 2+3: Kết nối tới cụm và kiểm tra cấu hình kubeconfig.' },
-                        { arg: '4', desc: 'Task 4: Deploy nginx Pod và copy file static test.html.' },
-                        { arg: '5', desc: 'Task 5: Deploy Pod sử dụng file cấu hình Yaml từ repo mẫu.' }
+                        { arg: 'all', desc: 'Triển khai toàn diện và kiểm tra Pod.' },
+                        { arg: '1', desc: 'Task 1: Tạo GKE Autopilot cluster.' },
+                        { arg: '4', desc: 'Task 4: Deploy nginx Pod và expose Service.' },
+                        { arg: '5', desc: 'Task 5: Triển khai pod từ file YAML.' }
                     ]
                 }
             ],
@@ -267,16 +256,14 @@
             const dNav = document.getElementById('desktop-nav');
             const mNav = document.getElementById('mobile-nav-list');
             dNav.innerHTML = ''; mNav.innerHTML = '';
-
             appData.labs.forEach(item => {
                 const li = document.createElement('li');
                 const btn = document.createElement('button');
-                btn.className = `nav-item w-full text-left px-6 py-4 flex items-center gap-3 transition-all ${appData.currentState === item.id ? 'active' : 'text-stone-500 hover:bg-stone-50'}`;
-                btn.innerHTML = `<span class="text-xl">${item.icon}</span> <span class="text-sm font-medium">${item.title}</span>`;
+                btn.className = `nav-item w-full text-left px-8 py-5 flex items-center gap-4 transition-all border-l-4 border-transparent ${appData.currentState === item.id ? 'active' : 'text-slate-500 hover:bg-slate-50'}`;
+                btn.innerHTML = `<span class="text-2xl">${item.icon}</span> <span class="text-sm font-bold">${item.title}</span>`;
                 btn.onclick = () => switchView(item.id);
                 li.appendChild(btn);
                 dNav.appendChild(li);
-
                 const mLi = li.cloneNode(true);
                 mLi.querySelector('button').onclick = () => { switchView(item.id); document.getElementById('mobile-nav').classList.add('hidden'); };
                 mNav.appendChild(mLi);
@@ -300,53 +287,50 @@
             const lab = appData.labs.find(l => l.id === viewId);
             document.getElementById('lab-icon').textContent = lab.icon;
             document.getElementById('lab-title').textContent = lab.title;
-            document.getElementById('lab-filename').textContent = `File: ${lab.filename}`;
+            document.getElementById('lab-filename').textContent = lab.filename;
             document.getElementById('lab-link').href = lab.link;
             
-            // One-liner generation
-            const oneLiner = `curl -LO ${lab.link} && chmod +x ${lab.filename} && ./${lab.filename} all`;
-            document.getElementById('one-liner-text').textContent = oneLiner;
-            document.getElementById('copy-one-liner-btn').onclick = () => copyText(oneLiner, document.getElementById('copy-one-liner-btn'));
+            // Step 1: Export Placeholder
+            document.getElementById('export-one-liner').textContent = `export ${lab.varType}="${lab.placeholder}"`;
+            
+            // Step 2: Run Command
+            const runCmd = `curl -LO ${lab.link} && chmod +x ${lab.filename} && bash ${lab.filename} \${${lab.varType}} all`;
+            document.getElementById('run-one-liner').textContent = runCmd;
 
-            // Variables injection
+            // Defaults
             const varContainer = document.getElementById('default-vars-container');
             varContainer.innerHTML = '';
             lab.defaultVars.forEach(v => {
                 const badge = document.createElement('div');
-                badge.className = 'var-badge p-2 rounded-lg text-center';
-                badge.innerHTML = `<div class="text-[9px] font-bold text-stone-400 uppercase tracking-tighter">${v.name}</div><div class="text-[11px] font-mono text-stone-700 truncate" title="${v.val}">${v.val}</div>`;
+                badge.className = 'bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-center';
+                badge.innerHTML = `<p class="text-[8px] font-black text-slate-400 uppercase mb-1">${v.name}</p><p class="text-xs font-mono font-bold text-slate-700">${v.val}</p>`;
                 varContainer.appendChild(badge);
             });
 
-            document.getElementById('usage-default').textContent = lab.usageDefault;
-            document.getElementById('usage-custom').textContent = lab.usageCustom;
-
-            document.getElementById('copy-usage-default').onclick = () => copyText(lab.usageDefault, document.getElementById('copy-usage-default'));
-            document.getElementById('copy-usage-custom').onclick = () => copyText(lab.usageCustom, document.getElementById('copy-usage-custom'));
-
+            // Tasks
             const cmdContainer = document.getElementById('lab-commands-container');
             cmdContainer.innerHTML = '';
-
             lab.commands.forEach(cmd => {
-                const cmdString = `./${lab.filename} ${cmd.arg}`;
+                const fullCmd = `bash ${lab.filename} \${${lab.varType}} ${cmd.arg}`;
                 const div = document.createElement('div');
-                div.className = 'bg-white border border-stone-200 rounded-xl p-4 hover:border-indigo-200 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4';
+                div.className = 'bg-white border border-slate-200 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:shadow-lg transition-all';
                 div.innerHTML = `
                     <div class="flex-1">
-                        <span class="text-[9px] font-bold px-2 py-0.5 bg-stone-100 text-stone-400 rounded-full border border-stone-200 uppercase tracking-tighter">ID: ${cmd.arg}</span>
-                        <p class="text-stone-600 text-xs mt-1 font-medium">${cmd.desc}</p>
+                        <span class="text-[8px] font-black px-2 py-0.5 bg-indigo-50 text-indigo-500 rounded-full border border-indigo-100 uppercase">TASK ${cmd.arg.toUpperCase()}</span>
+                        <p class="text-slate-600 text-xs font-bold mt-2">${cmd.desc}</p>
                     </div>
-                    <div class="flex items-center gap-2 bg-stone-50 p-1.5 rounded-lg border border-stone-100">
-                        <code class="text-[11px] text-indigo-600 font-bold px-2 code-block">${cmdString}</code>
-                        <button class="bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 px-3 py-1 rounded-md text-[10px] font-bold transition-all copy-btn" data-text="${cmdString}">Copy</button>
+                    <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100">
+                        <code class="text-[10px] text-indigo-600 font-black px-2 code-font">${fullCmd}</code>
+                        <button onclick="copyText('${fullCmd}', this)" class="bg-indigo-600 hover:bg-black text-white px-4 py-2 rounded-lg text-[10px] font-black transition-all">Copy</button>
                     </div>
                 `;
                 cmdContainer.appendChild(div);
             });
+        }
 
-            document.querySelectorAll('.copy-btn').forEach(b => {
-                b.onclick = () => copyText(b.getAttribute('data-text'), b);
-            });
+        function copyElement(id, btn) {
+            const text = document.getElementById(id).textContent;
+            copyText(text, btn);
         }
 
         function copyText(text, btn) {
@@ -354,8 +338,13 @@
             t.value = text; document.body.appendChild(t);
             t.select(); document.execCommand('copy');
             document.body.removeChild(t);
-            const old = btn.textContent; btn.textContent = 'Done!';
-            setTimeout(() => { btn.textContent = old; }, 1500);
+            const oldText = btn.textContent;
+            btn.textContent = 'COPIED!';
+            btn.classList.add('scale-105');
+            setTimeout(() => { 
+                btn.textContent = oldText; 
+                btn.classList.remove('scale-105');
+            }, 1200);
         }
 
         function renderChart() {
@@ -367,10 +356,10 @@
                 data: {
                     labels: dataLabs.map(l => l.title.split(':')[0]),
                     datasets: [{
-                        label: 'Tasks',
+                        label: 'Số lượng Task',
                         data: dataLabs.map(l => l.commands.length),
                         backgroundColor: '#4338ca',
-                        borderRadius: 6,
+                        borderRadius: 8,
                         barThickness: 20
                     }]
                 },
@@ -378,7 +367,10 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                    scales: { 
+                        y: { beginAtZero: true, grid: { display: false }, ticks: { stepSize: 1, font: { weight: 'bold' } } },
+                        x: { grid: { display: false }, ticks: { font: { weight: 'bold' } } }
+                    }
                 }
             });
         }
