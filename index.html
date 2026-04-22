@@ -7,8 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Chosen Palette: Warm Neutrals (Stone/Slate) with Indigo accents -->
-    <!-- Application Structure Plan: The application uses a dashboard-style layout with a persistent sidebar navigation and a dynamic main content area. This structure allows users to quickly switch between the general overview, configuration tips, and specific lab instructions without losing context. It transforms a linear markdown document into a task-oriented tool, optimizing for the primary user action: finding and copying the correct shell commands. -->
-    <!-- Visualization & Content Choices: Overview Info -> Goal: Summarize lab complexity -> Viz: Bar Chart (Chart.js) -> Interaction: Hover tooltips -> Justification: Quickly shows users the distribution of available tasks across different labs, helping them anticipate the workload -> Library: Chart.js. Confirming NO SVG/Mermaid used. -->
+    <!-- Application Structure Plan: Dashboard layout optimized for command copying. This version re-introduces the "Quick Run (One-liner)" section as requested, placing it prominently above the individual task IDs. It continues to feature the "Default Variables" analysis and usage syntax. The logic for copying and rendering is encapsulated within a single-page application structure for maximum usability in Cloud Shell environments. -->
+    <!-- Visualization & Content Choices: Overview -> Task Count per Lab. Lab Detail -> Quick Run Block -> Default Variables List -> Command List. Confirming NO SVG/Mermaid. -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
         .chart-container {
@@ -17,156 +17,149 @@
             max-width: 600px;
             margin-left: auto;
             margin-right: auto;
-            height: 300px;
-            max-height: 400px;
+            height: 250px;
+            max-height: 300px;
         }
         @media (min-width: 768px) {
-            .chart-container {
-                height: 350px;
-            }
+            .chart-container { height: 300px; }
         }
         .nav-item.active {
-            background-color: #e0e7ff;
+            background-color: #eef2ff;
             color: #3730a3;
             border-right: 4px solid #4f46e5;
             font-weight: 600;
         }
-        .nav-item {
-            border-right: 4px solid transparent;
+        .nav-item { border-right: 4px solid transparent; }
+        .code-block { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+        .var-badge {
+            background: #f8fafc;
+            color: #475569;
+            border: 1px solid #e2e8f0;
         }
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f5f5f4; 
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #d6d3d1; 
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #a8a29e; 
+        .highlight-box {
+            background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
         }
     </style>
 </head>
 <body class="bg-stone-50 text-stone-800 font-sans antialiased overflow-x-hidden flex h-screen">
 
-    <aside class="w-64 bg-white shadow-lg z-10 flex flex-col h-full flex-shrink-0 hidden md:flex">
+    <!-- Sidebar Navigation -->
+    <aside class="w-72 bg-white shadow-lg z-10 flex flex-col h-full flex-shrink-0 hidden md:flex">
         <div class="p-6 border-b border-stone-100">
             <h1 class="text-2xl font-bold text-indigo-900 flex items-center gap-2">
-                <span>☁️</span> GKE Labs
+                <span>☁️</span> GKE Automation
             </h1>
-            <p class="text-xs text-stone-500 mt-1">Script Automation Guide</p>
+            <p class="text-xs text-stone-500 mt-1 uppercase tracking-widest font-semibold">One-liner & Variable Guide</p>
         </div>
         <nav class="flex-1 overflow-y-auto py-4">
-            <ul class="space-y-1" id="desktop-nav">
-            </ul>
+            <ul class="space-y-1" id="desktop-nav"></ul>
         </nav>
     </aside>
 
+    <!-- Main Content -->
     <div class="flex-1 flex flex-col h-full overflow-hidden">
+        <!-- Mobile Header -->
         <header class="bg-white shadow-sm border-b border-stone-200 p-4 flex justify-between items-center md:hidden">
-            <h1 class="text-xl font-bold text-indigo-900 flex items-center gap-2">
-                <span>☁️</span> GKE Labs
-            </h1>
-            <button id="mobile-menu-btn" class="text-stone-600 focus:outline-none text-2xl">
-                ☰
-            </button>
+            <h1 class="text-xl font-bold text-indigo-900">GKE Automation</h1>
+            <button id="mobile-menu-btn" class="text-stone-600 text-2xl">☰</button>
         </header>
 
         <div id="mobile-nav" class="bg-white absolute w-full z-20 shadow-xl hidden flex-col border-b border-stone-200">
-            <ul class="py-2" id="mobile-nav-list">
-            </ul>
+            <ul class="py-2" id="mobile-nav-list"></ul>
         </div>
 
         <main class="flex-1 overflow-y-auto p-4 md:p-8 relative">
             
+            <!-- VIEW: OVERVIEW -->
             <section id="view-overview" class="view-section max-w-5xl mx-auto hidden">
-                <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-6 md:p-8 mb-8">
-                    <h2 class="text-3xl font-bold text-stone-900 mb-4 border-b pb-4 border-stone-100">Tổng quan & Chuẩn bị</h2>
-                    <p class="text-stone-600 text-lg mb-6 leading-relaxed">Phần này cung cấp cái nhìn tổng thể về ứng dụng và các yêu cầu cơ bản trước khi bắt đầu. Tại đây, bạn sẽ tìm thấy danh sách công việc cần chuẩn bị và biểu đồ tóm tắt số lượng tác vụ (tasks) được hỗ trợ tự động hóa trong mỗi bài Lab, giúp bạn hình dung cấu trúc nội dung của toàn bộ tài liệu hướng dẫn.</p>
+                <div class="bg-white rounded-2xl shadow-sm border border-stone-200 p-8 mb-8">
+                    <h2 class="text-3xl font-bold text-stone-900 mb-4 border-b pb-4 border-stone-100">Hướng dẫn Chạy nhanh & Biến</h2>
+                    <p class="text-stone-600 text-lg mb-8 leading-relaxed">Ứng dụng này giúp bạn quản lý các bài Lab về GKE thông qua các script tự động. Bạn có thể chọn cách <strong>Chạy nhanh (One-liner)</strong> để tiết kiệm thời gian hoặc thực hiện từng bước nếu muốn tìm hiểu kỹ quy trình.</p>
 
-                    <div class="grid md:grid-cols-2 gap-8 items-start">
+                    <div class="grid md:grid-cols-2 gap-12">
                         <div>
-                            <h3 class="text-xl font-semibold text-indigo-800 mb-4 flex items-center gap-2"><span>🧰</span> Yêu cầu bắt buộc</h3>
-                            <ul class="space-y-3">
-                                <li class="flex items-start gap-3 bg-stone-50 p-3 rounded-lg border border-stone-100">
-                                    <span class="text-green-600 mt-1">✔️</span>
-                                    <span>Đăng nhập vào <strong>Google Cloud Console</strong> bằng tài khoản Lab.</span>
-                                </li>
-                                <li class="flex items-start gap-3 bg-stone-50 p-3 rounded-lg border border-stone-100">
-                                    <span class="text-green-600 mt-1">✔️</span>
-                                    <span>Kích hoạt <strong>Cloud Shell</strong> (Biểu tượng <code>&gt;_</code> ở góc trên cùng bên phải).</span>
-                                </li>
-                                <li class="flex items-start gap-3 bg-stone-50 p-3 rounded-lg border border-stone-100">
-                                    <span class="text-green-600 mt-1">✔️</span>
-                                    <span>Đảm bảo bạn đã ở trong <strong>đúng Project</strong> của bài Lab.</span>
-                                </li>
-                            </ul>
+                            <h3 class="text-xl font-bold text-indigo-800 mb-4 flex items-center gap-2"><span>🚀</span> Quick Run One-liner</h3>
+                            <p class="text-stone-600 text-sm mb-4 leading-relaxed">Đối với mỗi bài Lab, chúng tôi cung cấp một câu lệnh gộp bao gồm việc tải script, cấp quyền thực thi và chạy toàn bộ các bước (parameter <code>all</code>). Đây là cách hiệu quả nhất khi bạn đã quen thuộc với yêu cầu của bài Lab.</p>
+                            <div class="p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+                                <h4 class="font-bold text-indigo-900 text-xs uppercase mb-2">Cấu trúc lệnh:</h4>
+                                <code class="text-[10px] block break-all text-indigo-700">curl -LO [URL] && chmod +x [FILE] && ./[FILE] all</code>
+                            </div>
                         </div>
-                        <div class="bg-stone-50 rounded-xl p-4 border border-stone-100">
-                            <h3 class="text-lg font-semibold text-stone-700 text-center mb-2">Số lượng Task tự động mỗi Lab</h3>
+                        <div class="flex flex-col items-center">
+                            <h3 class="text-lg font-semibold text-stone-700 mb-4">Phân bổ Tasks theo bài Lab</h3>
                             <div class="chart-container">
                                 <canvas id="overviewChart"></canvas>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <div class="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl shadow-sm border border-indigo-100 p-6 md:p-8">
-                    <h2 class="text-2xl font-bold text-indigo-900 mb-4">⚙️ Cách truyền tham số cho Script</h2>
-                    <p class="text-stone-700 mb-6">Các script hỗ trợ đối số vị trí (Positional Argument) đầu tiên để xác định phạm vi thực thi. Dưới đây là quy tắc chung:</p>
-                    
-                    <div class="grid md:grid-cols-2 gap-4">
-                        <div class="bg-white p-5 rounded-lg shadow-sm">
-                            <div class="text-xl mb-2">🔄</div>
-                            <h4 class="font-bold text-stone-900">Chạy toàn bộ (All)</h4>
-                            <p class="text-sm text-stone-600 mt-2">Truyền tham số <code>all</code> để script thực hiện từ đầu đến cuối một cách tuần tự.</p>
-                            <code class="block bg-stone-100 p-2 rounded mt-3 text-sm border border-stone-200">./lab_name.sh all</code>
-                        </div>
-                        <div class="bg-white p-5 rounded-lg shadow-sm">
-                            <div class="text-xl mb-2">🎯</div>
-                            <h4 class="font-bold text-stone-900">Chạy theo Task</h4>
-                            <p class="text-sm text-stone-600 mt-2">Truyền số thứ tự (1, 2, 3...) để chỉ thực hiện phần đó. Rất hữu ích khi cần chạy lại bước bị lỗi.</p>
-                            <code class="block bg-stone-100 p-2 rounded mt-3 text-sm border border-stone-200">./lab_name.sh 2</code>
-                        </div>
-                    </div>
-                </div>
             </section>
 
-            <section id="view-lab-detail" class="view-section max-w-4xl mx-auto hidden">
-                <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-6 md:p-8">
-                    <div class="flex items-center gap-3 mb-2">
-                        <span id="lab-icon" class="text-3xl"></span>
-                        <h2 id="lab-title" class="text-3xl font-bold text-stone-900"></h2>
-                    </div>
+            <!-- VIEW: LAB DETAIL -->
+            <section id="view-lab-detail" class="view-section max-w-5xl mx-auto hidden">
+                <div class="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 md:p-8">
                     
-                    <div class="mt-6 mb-8">
-                        <p class="text-stone-600 text-lg leading-relaxed mb-4">Phần này cung cấp chi tiết các lệnh thực thi cho bài Lab cụ thể. Mục đích là để bạn có thể tải về (download) script tự động, sau đó chọn chạy toàn bộ quy trình hoặc từng task riêng lẻ dựa trên tiến độ thực tế. Nhấp vào nút Copy để sao chép nhanh lệnh vào Cloud Shell.</p>
-                        
-                        <div class="bg-stone-50 border border-stone-200 rounded-lg p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                            <div class="overflow-hidden">
-                                <span class="text-xs font-semibold text-stone-500 uppercase tracking-wider block mb-1">Link Script Gốc</span>
-                                <a id="lab-link" href="#" target="_blank" class="text-indigo-600 hover:text-indigo-800 text-sm truncate block w-full md:w-96"></a>
+                    <!-- Header -->
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                        <div class="flex items-center gap-4">
+                            <span id="lab-icon" class="text-4xl p-3 bg-stone-50 rounded-2xl border border-stone-100"></span>
+                            <div>
+                                <h2 id="lab-title" class="text-3xl font-bold text-stone-900"></h2>
+                                <p id="lab-filename" class="text-stone-400 font-mono text-sm mt-1"></p>
                             </div>
-                            <button id="copy-link-btn" class="bg-stone-200 hover:bg-stone-300 text-stone-800 px-4 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap">
-                                📋 Copy Link
-                            </button>
+                        </div>
+                        <a id="lab-link" href="#" target="_blank" class="bg-stone-100 hover:bg-stone-200 text-stone-700 px-4 py-2 rounded-xl text-sm font-bold transition-all shrink-0">Script gốc ↗</a>
+                    </div>
+
+                    <!-- QUICK RUN SECTION -->
+                    <div class="mb-8 p-6 bg-indigo-900 rounded-2xl shadow-xl border border-indigo-700 relative overflow-hidden">
+                        <div class="relative z-10">
+                            <h3 class="text-indigo-200 text-xs font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
+                                <span>🚀</span> Quick Run (One-liner)
+                            </h3>
+                            <p class="text-white text-sm mb-4">Tải file, cấp quyền và chạy toàn bộ chỉ với 1 lệnh:</p>
+                            <div class="bg-stone-950/50 p-4 rounded-xl border border-white/10 flex flex-col md:flex-row gap-3 items-center">
+                                <code id="one-liner-text" class="text-indigo-300 text-xs break-all flex-1 font-mono"></code>
+                                <button id="copy-one-liner-btn" class="bg-white hover:bg-indigo-100 text-indigo-900 px-6 py-2 rounded-lg text-xs font-bold transition-all shrink-0">Copy Lệnh</button>
+                            </div>
                         </div>
                     </div>
 
-                    <h3 class="text-xl font-bold text-stone-800 border-b pb-2 mb-6">Danh sách Lệnh thực thi</h3>
-                    <div id="lab-commands-container" class="space-y-6">
+                    <!-- DEFAULT VARIABLES SECTION -->
+                    <div class="mb-8">
+                        <div class="flex items-center gap-2 mb-3">
+                            <h3 class="text-sm font-bold text-stone-500 uppercase tracking-widest">Biến mặc định trong Script</h3>
+                            <div class="h-px bg-stone-200 flex-1"></div>
+                        </div>
+                        <div id="default-vars-container" class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        </div>
+                        <p class="text-[11px] text-stone-400 mt-2 italic">* Nếu giá trị trong bài lab khác với trên, hãy sử dụng tham số Region/Zone tương ứng để set lại.</p>
                     </div>
-                    
-                    <div class="mt-10 p-5 bg-amber-50 border border-amber-200 rounded-lg">
-                        <h4 class="font-bold text-amber-800 flex items-center gap-2 mb-2"><span>⚠️</span> Lưu ý quan trọng</h4>
-                        <ul class="list-disc list-inside text-sm text-amber-900 space-y-1">
-                            <li>Nếu chạy mà không truyền tham số, script thường mặc định chạy tất cả hoặc hiển thị menu.</li>
-                            <li>Các Task phía sau (ví dụ Task 2) thường yêu cầu Task trước đó (Task 1) phải hoàn thành.</li>
-                        </ul>
+
+                    <!-- Usage Explanation -->
+                    <div class="mb-10 p-6 highlight-box rounded-2xl border border-stone-100">
+                        <h3 class="text-lg font-bold text-indigo-900 mb-4 flex items-center gap-2">
+                            <span class="w-2 h-6 bg-indigo-500 rounded-full"></span>
+                            Cú pháp thực thi chi tiết
+                        </h3>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div class="bg-stone-900 text-indigo-300 p-4 rounded-xl font-mono text-sm shadow-inner relative group border border-stone-700">
+                                <div class="text-[10px] text-stone-500 mb-1 uppercase font-bold tracking-tighter">Tham số mặc định (Default)</div>
+                                <code id="usage-default"></code>
+                                <button id="copy-usage-default" class="absolute right-4 top-1/2 -translate-y-1/2 bg-stone-700 hover:bg-indigo-600 text-white px-3 py-1 rounded text-xs transition-all">Copy</button>
+                            </div>
+                            <div class="bg-stone-800 text-stone-400 p-4 rounded-xl font-mono text-sm shadow-inner relative group border border-stone-700">
+                                <div class="text-[10px] text-stone-500 mb-1 uppercase font-bold tracking-tighter">Region tùy chỉnh (Override)</div>
+                                <code id="usage-custom"></code>
+                                <button id="copy-usage-custom" class="absolute right-4 top-1/2 -translate-y-1/2 bg-stone-700 hover:bg-stone-600 text-white px-3 py-1 rounded text-xs transition-all">Copy</button>
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- Commands Table -->
+                    <h3 class="text-lg font-bold text-stone-800 mb-4">Các bước Task IDs lẻ</h3>
+                    <div id="lab-commands-container" class="space-y-3"></div>
+
                 </div>
             </section>
 
@@ -178,34 +171,49 @@
             labs: [
                 {
                     id: 'overview',
-                    title: 'Tổng quan & Hướng dẫn',
+                    title: 'Tổng quan & Chạy nhanh',
                     icon: '🏠',
                     isNavOnly: true
                 },
                 {
                     id: 'lab1',
-                    title: 'Lab 1: Deploying GKE Autopilot Clusters',
+                    title: 'Lab 1: Deploying GKE Autopilot',
                     icon: '📦',
                     filename: 'lab1.sh',
                     link: 'https://gist.githubusercontent.com/vandb-cavn/4a1c3a756c4f665fa83b74baa2bc3ae6/raw/652238cc3936e557e7b48b83cdc9bf84116aec57/lab1.sh',
-                    tasks: 2,
+                    defaultVars: [
+                        { name: 'REGION', val: 'us-central1' },
+                        { name: 'CLUSTER', val: 'autopilot-cluster-1' },
+                        { name: 'DEPLOYMENT', val: 'nginx-1' },
+                        { name: 'IMAGE', val: 'nginx:latest' }
+                    ],
+                    usageDefault: './lab1.sh all',
+                    usageCustom: './lab1.sh all',
                     commands: [
-                        { arg: 'all', desc: 'Chạy toàn bộ Lab (Tạo Cluster, kiểm tra, cấu hình).' },
-                        { arg: '1', desc: 'Chỉ chạy Task 1: Thiết lập môi trường/API.' },
-                        { arg: '2', desc: 'Chỉ chạy Task 2: Triển khai Autopilot Cluster.' }
+                        { arg: 'all', desc: 'Chạy toàn bộ Lab với cấu hình mặc định (us-central1).' },
+                        { arg: '1', desc: 'Task 1: Chỉ bật container API và tạo cụm GKE Autopilot.' },
+                        { arg: '2', desc: 'Task 2: Lấy credentials và triển khai nginx workload.' }
                     ]
                 },
                 {
                     id: 'lab2',
-                    title: 'Lab 2: Running a Containerized App on GKE',
+                    title: 'Lab 2: Containerized App on GKE',
                     icon: '🐳',
                     filename: 'lab2.sh',
                     link: 'https://gist.githubusercontent.com/vandb-cavn/51c5e4ef4000d9c954259ce6159c8ad4/raw/7fc552ad3c6afaa7d38c3fe8a2c13d163fa777ad/lab2.sh',
-                    tasks: 2,
+                    defaultVars: [
+                        { name: 'ZONE', val: 'us-central1-f' },
+                        { name: 'CLUSTER', val: 'hello-world' },
+                        { name: 'IMAGE', val: 'hello-app:1.0' },
+                        { name: 'DEPLOY', val: 'hello-app' }
+                    ],
+                    usageDefault: './lab2.sh all',
+                    usageCustom: './lab2.sh all',
                     commands: [
-                        { arg: 'all', desc: 'Chạy toàn bộ Lab (Tạo Cluster, Build App, Deploy, LoadBalancer).' },
-                        { arg: '1', desc: 'Chỉ chạy Task 1: Tạo Cluster GKE.' },
-                        { arg: '3', desc: 'Chỉ chạy Task 3: Deploy ứng dụng lên Cluster.' }
+                        { arg: 'all', desc: 'Chạy toàn bộ quy trình: Tạo cụm, Build Image, Push GCR, Deploy & Expose.' },
+                        { arg: '1', desc: 'Task 1: Thiết lập compute zone và tạo cụm GKE 3 nodes.' },
+                        { arg: '2', desc: 'Task 2: Clone code, Build image hello-node và Push lên GCR.' },
+                        { arg: '3', desc: 'Task 3: Expose LoadBalancer cho deployment hello-node.' }
                     ]
                 },
                 {
@@ -214,22 +222,40 @@
                     icon: '🏗️',
                     filename: 'lab3.sh',
                     link: 'https://gist.githubusercontent.com/vandb-cavn/bbb41a63e895900f7abe9b6029e09798/raw/15b0137dc539796dba6f32642deab63b71b84b80/lab3.sh',
-                    tasks: 1,
+                    defaultVars: [
+                        { name: 'REGION', val: 'europe-west1' },
+                        { name: 'REPO', val: 'quickstart-docker-repo' },
+                        { name: 'TAG', val: 'tag1' }
+                    ],
+                    usageDefault: './lab3.sh all',
+                    usageCustom: './lab3.sh us-east1 all',
                     commands: [
-                        { arg: 'all', desc: 'Chạy toàn bộ Lab (Tạo Dockerfile, Build Image, Artifact Registry).' },
-                        { arg: '2', desc: 'Chỉ chạy Task 2: Thực hiện Cloud Build.' }
+                        { arg: 'all', desc: 'Thực hiện toàn bộ: Enable API, Docker Build, CloudBuild YAML, Build & Test.' },
+                        { arg: '1', desc: 'Task 1: Kích hoạt các API cần thiết (Cloud Build, Registry).' },
+                        { arg: '2', desc: 'Task 2: Build Image bằng Dockerfile truyền thống.' },
+                        { arg: '3', desc: 'Task 3: Build Image sử dụng file cấu hình cloudbuild.yaml.' },
+                        { arg: '4', desc: 'Task 4: Build & Test sử dụng cloudbuild2.yaml (mô phỏng test fail).' }
                     ]
                 },
                 {
                     id: 'lab4',
-                    title: 'Lab 4: Deploying GKE Autopilot from Cloud Shell',
-                    icon: '☁️',
+                    title: 'Lab 4: GKE Shell Autopilot',
+                    icon: '⌨️',
                     filename: 'lab4.sh',
                     link: 'https://gist.githubusercontent.com/vandb-cavn/7cadf6ced54f55d1fa3856d8cc64b972/raw/a19b7a2c29ddd1035c64f5e069b468e6e7a17b66/lab4.sh',
-                    tasks: 1,
+                    defaultVars: [
+                        { name: 'REGION', val: 'europe-west4' },
+                        { name: 'CLUSTER', val: 'autopilot-cluster-1' },
+                        { name: 'POD_NAME', val: 'nginx-1' }
+                    ],
+                    usageDefault: './lab4.sh all',
+                    usageCustom: './lab4.sh us-central1 all',
                     commands: [
-                        { arg: 'all', desc: 'Thực hiện toàn bộ các bước triển khai qua dòng lệnh.' },
-                        { arg: '1', desc: 'Chỉ cấu hình biến môi trường và vùng (Region).' }
+                        { arg: 'all', desc: 'Triển khai cụm, kết nối, deploy Pod từ gcloud và YAML.' },
+                        { arg: '1', desc: 'Task 1: Triển khai cụm GKE Autopilot qua Cloud Shell.' },
+                        { arg: '2', desc: 'Task 2+3: Kết nối tới cụm và kiểm tra cấu hình kubeconfig.' },
+                        { arg: '4', desc: 'Task 4: Deploy nginx Pod và copy file static test.html.' },
+                        { arg: '5', desc: 'Task 5: Deploy Pod sử dụng file cấu hình Yaml từ repo mẫu.' }
                     ]
                 }
             ],
@@ -238,40 +264,29 @@
         };
 
         function initNav() {
-            const desktopNav = document.getElementById('desktop-nav');
-            const mobileNav = document.getElementById('mobile-nav-list');
-            
-            desktopNav.innerHTML = '';
-            mobileNav.innerHTML = '';
+            const dNav = document.getElementById('desktop-nav');
+            const mNav = document.getElementById('mobile-nav-list');
+            dNav.innerHTML = ''; mNav.innerHTML = '';
 
             appData.labs.forEach(item => {
-                const liDesktop = document.createElement('li');
-                const btnDesktop = document.createElement('button');
-                btnDesktop.className = `nav-item w-full text-left px-6 py-3 flex items-center gap-3 transition-colors ${appData.currentState === item.id ? 'active' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'}`;
-                btnDesktop.innerHTML = `<span class="text-xl">${item.icon}</span> <span class="truncate text-sm">${item.title}</span>`;
-                btnDesktop.onclick = () => switchView(item.id);
-                liDesktop.appendChild(btnDesktop);
-                desktopNav.appendChild(liDesktop);
+                const li = document.createElement('li');
+                const btn = document.createElement('button');
+                btn.className = `nav-item w-full text-left px-6 py-4 flex items-center gap-3 transition-all ${appData.currentState === item.id ? 'active' : 'text-stone-500 hover:bg-stone-50'}`;
+                btn.innerHTML = `<span class="text-xl">${item.icon}</span> <span class="text-sm font-medium">${item.title}</span>`;
+                btn.onclick = () => switchView(item.id);
+                li.appendChild(btn);
+                dNav.appendChild(li);
 
-                const liMobile = document.createElement('li');
-                const btnMobile = document.createElement('button');
-                btnMobile.className = `w-full text-left px-6 py-4 border-b border-stone-100 flex items-center gap-3 ${appData.currentState === item.id ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-stone-700'}`;
-                btnMobile.innerHTML = `<span>${item.icon}</span> <span>${item.title}</span>`;
-                btnMobile.onclick = () => {
-                    switchView(item.id);
-                    document.getElementById('mobile-nav').classList.add('hidden');
-                };
-                liMobile.appendChild(btnMobile);
-                mobileNav.appendChild(liMobile);
+                const mLi = li.cloneNode(true);
+                mLi.querySelector('button').onclick = () => { switchView(item.id); document.getElementById('mobile-nav').classList.add('hidden'); };
+                mNav.appendChild(mLi);
             });
         }
 
         function switchView(viewId) {
             appData.currentState = viewId;
             initNav();
-
-            document.querySelectorAll('.view-section').forEach(sec => sec.classList.add('hidden'));
-
+            document.querySelectorAll('.view-section').forEach(s => s.classList.add('hidden'));
             if (viewId === 'overview') {
                 document.getElementById('view-overview').classList.remove('hidden');
                 renderChart();
@@ -283,178 +298,93 @@
 
         function renderLabDetail(viewId) {
             const lab = appData.labs.find(l => l.id === viewId);
-            if (!lab) return;
-
             document.getElementById('lab-icon').textContent = lab.icon;
             document.getElementById('lab-title').textContent = lab.title;
+            document.getElementById('lab-filename').textContent = `File: ${lab.filename}`;
+            document.getElementById('lab-link').href = lab.link;
             
-            const linkEl = document.getElementById('lab-link');
-            linkEl.href = lab.link;
-            linkEl.textContent = lab.link;
+            // One-liner generation
+            const oneLiner = `curl -LO ${lab.link} && chmod +x ${lab.filename} && ./${lab.filename} all`;
+            document.getElementById('one-liner-text').textContent = oneLiner;
+            document.getElementById('copy-one-liner-btn').onclick = () => copyText(oneLiner, document.getElementById('copy-one-liner-btn'));
 
-            const copyLinkBtn = document.getElementById('copy-link-btn');
-            copyLinkBtn.onclick = () => copyText(lab.link, copyLinkBtn);
-
-            const container = document.getElementById('lab-commands-container');
-            container.innerHTML = '';
-
-            const quickRunCmd = `curl -LO ${lab.link} && chmod +x ${lab.filename} && ./${lab.filename} all`;
-            
-            const quickRunHTML = `
-                <div class="bg-indigo-50 border-l-4 border-indigo-500 rounded-r-lg p-5 mb-8 shadow-sm">
-                    <h4 class="font-bold text-indigo-900 mb-2 flex items-center gap-2"><span>🚀</span> Quick Run (One-liner)</h4>
-                    <p class="text-sm text-indigo-700 mb-3">Tải file, cấp quyền và chạy toàn bộ chỉ với 1 lệnh:</p>
-                    <div class="flex flex-col md:flex-row gap-2">
-                        <code class="bg-white border border-indigo-200 text-stone-800 p-3 rounded flex-1 text-sm overflow-x-auto whitespace-nowrap block">${quickRunCmd}</code>
-                        <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap copy-btn" data-text="${quickRunCmd}">
-                            📋 Copy
-                        </button>
-                    </div>
-                </div>
-            `;
-            container.innerHTML += quickRunHTML;
-
-            lab.commands.forEach(cmd => {
-                const fullCmd = `./${lab.filename} ${cmd.arg}`;
-                const card = document.createElement('div');
-                card.className = 'border border-stone-200 rounded-lg p-5 hover:shadow-md transition-shadow bg-white';
-                card.innerHTML = `
-                    <div class="flex justify-between items-start mb-3">
-                        <div>
-                            <span class="inline-block bg-stone-100 text-stone-600 border border-stone-300 text-xs px-2 py-1 rounded font-mono mb-2">Tham số: ${cmd.arg}</span>
-                            <p class="text-stone-800 font-medium">${cmd.desc}</p>
-                        </div>
-                    </div>
-                    <div class="flex flex-col md:flex-row gap-2 mt-4 bg-stone-50 p-2 rounded border border-stone-100">
-                        <code class="flex-1 text-sm text-stone-800 font-mono p-2 overflow-x-auto">${fullCmd}</code>
-                        <button class="bg-stone-200 hover:bg-stone-300 text-stone-800 px-4 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap copy-btn" data-text="${fullCmd}">
-                            📋 Copy
-                        </button>
-                    </div>
-                `;
-                container.appendChild(card);
+            // Variables injection
+            const varContainer = document.getElementById('default-vars-container');
+            varContainer.innerHTML = '';
+            lab.defaultVars.forEach(v => {
+                const badge = document.createElement('div');
+                badge.className = 'var-badge p-2 rounded-lg text-center';
+                badge.innerHTML = `<div class="text-[9px] font-bold text-stone-400 uppercase tracking-tighter">${v.name}</div><div class="text-[11px] font-mono text-stone-700 truncate" title="${v.val}">${v.val}</div>`;
+                varContainer.appendChild(badge);
             });
 
-            document.querySelectorAll('.copy-btn').forEach(btn => {
-                btn.onclick = () => copyText(btn.getAttribute('data-text'), btn);
+            document.getElementById('usage-default').textContent = lab.usageDefault;
+            document.getElementById('usage-custom').textContent = lab.usageCustom;
+
+            document.getElementById('copy-usage-default').onclick = () => copyText(lab.usageDefault, document.getElementById('copy-usage-default'));
+            document.getElementById('copy-usage-custom').onclick = () => copyText(lab.usageCustom, document.getElementById('copy-usage-custom'));
+
+            const cmdContainer = document.getElementById('lab-commands-container');
+            cmdContainer.innerHTML = '';
+
+            lab.commands.forEach(cmd => {
+                const cmdString = `./${lab.filename} ${cmd.arg}`;
+                const div = document.createElement('div');
+                div.className = 'bg-white border border-stone-200 rounded-xl p-4 hover:border-indigo-200 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4';
+                div.innerHTML = `
+                    <div class="flex-1">
+                        <span class="text-[9px] font-bold px-2 py-0.5 bg-stone-100 text-stone-400 rounded-full border border-stone-200 uppercase tracking-tighter">ID: ${cmd.arg}</span>
+                        <p class="text-stone-600 text-xs mt-1 font-medium">${cmd.desc}</p>
+                    </div>
+                    <div class="flex items-center gap-2 bg-stone-50 p-1.5 rounded-lg border border-stone-100">
+                        <code class="text-[11px] text-indigo-600 font-bold px-2 code-block">${cmdString}</code>
+                        <button class="bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 px-3 py-1 rounded-md text-[10px] font-bold transition-all copy-btn" data-text="${cmdString}">Copy</button>
+                    </div>
+                `;
+                cmdContainer.appendChild(div);
+            });
+
+            document.querySelectorAll('.copy-btn').forEach(b => {
+                b.onclick = () => copyText(b.getAttribute('data-text'), b);
             });
         }
 
-        function copyText(text, btnElement) {
-            const tempInput = document.createElement('textarea');
-            tempInput.value = text;
-            document.body.appendChild(tempInput);
-            tempInput.select();
-            try {
-                document.execCommand('copy');
-                const originalText = btnElement.textContent;
-                btnElement.textContent = '✅ Đã chép';
-                btnElement.classList.replace('bg-stone-200', 'bg-green-100');
-                btnElement.classList.replace('text-stone-800', 'text-green-800');
-                if(btnElement.classList.contains('bg-indigo-600')) {
-                    btnElement.classList.replace('bg-indigo-600', 'bg-green-600');
-                }
-                
-                setTimeout(() => {
-                    btnElement.textContent = originalText;
-                    btnElement.classList.replace('bg-green-100', 'bg-stone-200');
-                    btnElement.classList.replace('text-green-800', 'text-stone-800');
-                    if(btnElement.classList.contains('bg-green-600')) {
-                        btnElement.classList.replace('bg-green-600', 'bg-indigo-600');
-                    }
-                }, 2000);
-            } catch (err) {
-                console.error('Lỗi khi copy', err);
-            }
-            document.body.removeChild(tempInput);
+        function copyText(text, btn) {
+            const t = document.createElement('textarea');
+            t.value = text; document.body.appendChild(t);
+            t.select(); document.execCommand('copy');
+            document.body.removeChild(t);
+            const old = btn.textContent; btn.textContent = 'Done!';
+            setTimeout(() => { btn.textContent = old; }, 1500);
         }
 
         function renderChart() {
             const ctx = document.getElementById('overviewChart').getContext('2d');
             const dataLabs = appData.labs.filter(l => !l.isNavOnly);
-            
-            if (appData.chartInstance) {
-                appData.chartInstance.destroy();
-            }
-
+            if (appData.chartInstance) appData.chartInstance.destroy();
             appData.chartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: dataLabs.map(l => l.title.split(':')[0]),
                     datasets: [{
-                        label: 'Số lượng Task Options',
-                        data: dataLabs.map(l => l.tasks),
-                        backgroundColor: [
-                            'rgba(79, 70, 229, 0.7)',
-                            'rgba(14, 165, 233, 0.7)',
-                            'rgba(16, 185, 129, 0.7)',
-                            'rgba(245, 158, 11, 0.7)'
-                        ],
-                        borderColor: [
-                            'rgb(67, 56, 202)',
-                            'rgb(2, 132, 199)',
-                            'rgb(5, 150, 105)',
-                            'rgb(217, 119, 6)'
-                        ],
-                        borderWidth: 1,
-                        borderRadius: 4
+                        label: 'Tasks',
+                        data: dataLabs.map(l => l.commands.length),
+                        backgroundColor: '#4338ca',
+                        borderRadius: 6,
+                        barThickness: 20
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            callbacks: {
-                                title: function(context) {
-                                    let label = context[0].label || '';
-                                    const fullTitle = dataLabs.find(l => l.title.startsWith(label)).title;
-                                    const words = fullTitle.split(' ');
-                                    let lines = [];
-                                    let currentLine = '';
-                                    words.forEach(word => {
-                                        if ((currentLine + word).length > 25) {
-                                            lines.push(currentLine.trim());
-                                            currentLine = word + ' ';
-                                        } else {
-                                            currentLine += word + ' ';
-                                        }
-                                    });
-                                    lines.push(currentLine.trim());
-                                    return lines;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                stepSize: 1
-                            },
-                            title: {
-                                display: true,
-                                text: 'Số lượng Task'
-                            }
-                        }
-                    }
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
                 }
             });
         }
 
-        document.getElementById('mobile-menu-btn').addEventListener('click', () => {
-            const nav = document.getElementById('mobile-nav');
-            nav.classList.toggle('hidden');
-            nav.classList.toggle('flex');
-        });
-
-        window.onload = () => {
-            initNav();
-            switchView('overview');
-        };
+        document.getElementById('mobile-menu-btn').onclick = () => document.getElementById('mobile-nav').classList.toggle('hidden');
+        window.onload = () => { initNav(); switchView('overview'); };
     </script>
 </body>
 </html>
